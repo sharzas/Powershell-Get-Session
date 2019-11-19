@@ -1,23 +1,40 @@
 . .\Get-Session.ps1
 
-$Sessions = Get-Session
-$Processes = Get-Process
+function Get-ProcessList ()
+{
+    Param (
+        $Processes
+    )
 
-$a=Foreach ($Proc in $Processes[0..10]) {
-    Write-Host $Proc.ProcessName
-    [PSCustomObject]@{
-        Name = $Proc.ProcessName
-        ProcessId = $Proc.Id
-        SessionName = ($Sessions|Where-Object {$_.Id -eq $Proc.SessionId}).SessionName
-        SessionId = $Proc.SessionId
-        MemoryUsage = "{0:N0} KB" -f $($Proc.WS/1kb)
-        Description = $Proc.MainModule.Description
-        Company = $Proc.MainModule.Company
-        Product = $Proc.MainModule.Product
-        Version = $Proc.MainModule.ProductVersion
-        Module = $Proc.MainModule.ModuleName
-        FileName = $Proc.MainModule.FileName
+    $Sessions = Get-Session  # JNPSFunctions Required
+
+    Foreach ($Proc in $Processes) {
+        [PSCustomObject]@{
+            Name = $Proc.ProcessName
+            ProcessId = $Proc.Id
+            SessionName = ($Sessions|Where-Object {$_.Id -eq $Proc.SessionId}).SessionName
+            SessionId = $Proc.SessionId
+            MemoryUsage = "{0:N0} KB" -f $($Proc.WS/1kb)
+            Description = $Proc.Description
+            Company = $Proc.Company
+            Product = $Proc.Product
+            Version = $Proc.ProductVersion
+            Module = $Proc.ModuleName
+            FileName = $Proc.FileName
+        }
     }
 }
 
-$a|ft *
+
+$Processes = Get-Process|Select-Object "ProcessName", 
+"Id", 
+"WS",
+"SessionId",
+@{N="FileName"; E={$_.MainModule.FileName}}, 
+@{N="Description"; E={$_.MainModule.Description}},
+@{N="Company"; E={$_.MainModule.Company}},
+@{N="Product"; E={$_.MainModule.Product}},
+@{N="ProductVersion"; E={$_.MainModule.ProductVersion}},
+@{N="ModuleName"; E={$_.MainModule.ModuleName}}
+
+Get-ProcessList -Processes $Processes
